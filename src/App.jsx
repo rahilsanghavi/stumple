@@ -515,7 +515,77 @@ function StatusCell({ value, status, direction }) {
   );
 }
 
+function FloodlightTower({ side, delayBase }) {
+  const dots = Array.from({ length: 9 });
+  return (
+    <div className={`stumple-tower stumple-tower-${side}`}>
+      <div className="stumple-light-cluster">
+        {dots.map((_, i) => (
+          <span
+            key={i}
+            className="stumple-light-dot"
+            style={{ animationDelay: `${delayBase + i * 0.025}s` }}
+          />
+        ))}
+      </div>
+      <div className="stumple-pole" />
+      <div
+        className="stumple-glow-cone"
+        style={{ animationDelay: `${delayBase + 0.32}s` }}
+      />
+    </div>
+  );
+}
+
+function IntroAnimation({ onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 2800);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  return (
+    <div className="stumple-intro">
+      <FloodlightTower side="1" delayBase={0} />
+      <FloodlightTower side="2" delayBase={0.12} />
+      <FloodlightTower side="3" delayBase={0.12} />
+      <FloodlightTower side="4" delayBase={0} />
+      <svg className="stumple-stadium-svg" viewBox="0 0 800 200" preserveAspectRatio="none">
+        <path d="M0,200 L0,115 Q400,72 800,115 L800,200 Z" fill="#08140F" />
+        <path
+          d="M0,140 Q400,100 800,140"
+          fill="none"
+          stroke="#1c3a2b"
+          strokeWidth="2"
+          opacity="0.6"
+        />
+        {Array.from({ length: 22 }).map((_, i) => {
+          const x = 15 + i * (770 / 21);
+          const t = i / 21;
+          const y = 115 + (72 - 115) * (1 - Math.pow(2 * t - 1, 2));
+          return (
+            <rect
+              key={i}
+              x={x - 1}
+              y={y - 12}
+              width="2"
+              height="16"
+              fill="#1c3a2b"
+              opacity="0.7"
+            />
+          );
+        })}
+      </svg>
+      <div className="stumple-intro-flash" />
+      <div className="stumple-intro-text">
+        <span style={{ fontSize: 34 }}>🏏</span>
+        <span className="stumple-intro-title">Stumple</span>
+      </div>
+    </div>
+  );
+}
+
 export default function Stumple() {
+  const [showIntro, setShowIntro] = useState(true);
   const [mode, setMode] = useState("daily"); // daily | practice
   const dailyDate = getISTDateString();
   const dailyAnswer = useMemo(
@@ -634,7 +704,7 @@ export default function Stumple() {
   return (
     <div
       style={{
-        minHeight: "100%",
+        minHeight: "100vh",
         background:
           "radial-gradient(1200px 600px at 50% -10%, #1F5138 0%, #14372A 55%, #0E271E 100%)",
         fontFamily: "'Inter', -apple-system, sans-serif",
@@ -645,15 +715,76 @@ export default function Stumple() {
         alignItems: "center",
       }}
     >
+      {showIntro && <IntroAnimation onDone={() => setShowIntro(false)} />}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
-        .stumple-seam {
-          position: absolute;
-          top: 0; left: 50%;
-          width: 2px; height: 100%;
-          background: repeating-linear-gradient(to bottom, #F5F0E6 0 8px, transparent 8px 16px);
-          opacity: 0.08;
+        .stumple-intro {
+          position: fixed; inset: 0; z-index: 999;
+          background: linear-gradient(to bottom, #050b08 0%, #0c2318 55%, #14372A 100%);
+          display: flex; align-items: center; justify-content: center;
+          overflow: hidden;
+          animation: stumple-intro-fadeout 0.6s ease 2.2s forwards;
+        }
+        .stumple-tower { position: absolute; top: 0; width: 46px; display: flex; flex-direction: column; align-items: center; }
+        .stumple-tower-1 { left: 5%; }
+        .stumple-tower-2 { left: 25%; }
+        .stumple-tower-3 { right: 25%; }
+        .stumple-tower-4 { right: 5%; }
+        .stumple-light-cluster {
+          display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
+          background: #14140f; border: 1px solid #2a2a22; border-radius: 4px;
+          padding: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+        .stumple-light-dot {
+          width: 8px; height: 8px; border-radius: 50%;
+          background: radial-gradient(circle, #fffef2 0%, #ffe9a8 55%, #a5822f 100%);
+          opacity: 0;
+          box-shadow: 0 0 2px 1px rgba(255,244,200,0.6);
+          animation: stumple-dot-flash 0.25s ease forwards;
+        }
+        @keyframes stumple-dot-flash {
+          0% { opacity: 0; box-shadow: 0 0 2px 1px rgba(255,244,200,0.2); }
+          60% { opacity: 1; box-shadow: 0 0 10px 4px rgba(255,244,200,0.95); }
+          100% { opacity: 1; box-shadow: 0 0 6px 3px rgba(255,244,200,0.75); }
+        }
+        .stumple-pole { width: 3px; height: 30vh; background: linear-gradient(to bottom, #2a2a22, #0a0a08); }
+        .stumple-glow-cone {
+          position: absolute; top: 24px; left: 50%;
+          width: 6px; height: 0;
+          background: linear-gradient(to bottom, rgba(255,244,210,0.45), rgba(255,244,210,0));
           transform: translateX(-50%);
+          clip-path: polygon(46% 0, 54% 0, 100% 100%, 0% 100%);
+          animation: stumple-cone-grow 0.9s ease forwards;
+        }
+        @keyframes stumple-cone-grow {
+          from { height: 0; opacity: 0; width: 6px; }
+          to { height: 55vh; opacity: 1; width: 260px; }
+        }
+        .stumple-stadium-svg { position: absolute; bottom: 0; left: 0; width: 100%; height: 24%; opacity: 0.95; }
+        .stumple-intro-flash {
+          position: absolute; inset: 0; background: #fff; opacity: 0;
+          animation: stumple-flash 0.3s ease 0.85s;
+        }
+        @keyframes stumple-flash {
+          0% { opacity: 0; } 45% { opacity: 0.3; } 100% { opacity: 0; }
+        }
+        .stumple-intro-text {
+          position: relative; z-index: 2; display: flex; align-items: center; gap: 14px;
+          opacity: 0; transform: scale(0.85);
+          animation: stumple-title-in 0.7s ease 0.9s forwards;
+        }
+        .stumple-intro-title {
+          font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 44px;
+          letter-spacing: 4px; color: #F5F0E6; text-transform: uppercase;
+          text-shadow: 0 0 24px rgba(212,175,55,0.55);
+        }
+        @keyframes stumple-title-in {
+          from { opacity: 0; transform: scale(0.85); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes stumple-intro-fadeout {
+          from { opacity: 1; visibility: visible; }
+          to { opacity: 0; visibility: hidden; }
         }
         .stumple-input:focus { outline: 2px solid #D4AF37; outline-offset: 2px; }
         .stumple-btn:focus-visible { outline: 2px solid #D4AF37; outline-offset: 2px; }
@@ -671,7 +802,6 @@ export default function Stumple() {
       `}</style>
 
       <div style={{ position: "relative", width: "100%", maxWidth: 640 }}>
-        <div className="stumple-seam" />
 
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 14 }}>
@@ -684,8 +814,43 @@ export default function Stumple() {
           <p style={{ margin: 0, fontSize: 14, color: "#C9BFA8" }}>
             Guess the cricketer in {MAX_TRIES} tries. Every guess gives you clues.
           </p>
+          <ul
+            style={{
+              listStyle: "none",
+              margin: "12px auto 0",
+              padding: "12px 16px",
+              maxWidth: 420,
+              textAlign: "left",
+              display: "flex",
+              flexDirection: "column",
+              gap: 7,
+              background: "rgba(0,0,0,0.15)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 10,
+            }}
+          >
+            <li style={{ fontSize: 12.5, color: "#F5F0E6", fontWeight: 600, marginBottom: 2 }}>
+              Guess a cricketer to start.
+            </li>
+            <li style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "#C9BFA8", lineHeight: 1.4 }}>
+              <i style={{ background: "#2F6B4F", display: "inline-block", width: 9, height: 9, borderRadius: 3, marginTop: 3, flexShrink: 0 }} />
+              <span><strong style={{ color: "#F5F0E6" }}>Green</strong> — exact match</span>
+            </li>
+            <li style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "#C9BFA8", lineHeight: 1.4 }}>
+              <i style={{ background: "#C9A227", display: "inline-block", width: 9, height: 9, borderRadius: 3, marginTop: 3, flexShrink: 0 }} />
+              <span><strong style={{ color: "#F5F0E6" }}>Yellow</strong> — close: same continent for Country, or a related Role</span>
+            </li>
+            <li style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "#C9BFA8", lineHeight: 1.4 }}>
+              <i style={{ background: "#7A2E38", display: "inline-block", width: 9, height: 9, borderRadius: 3, marginTop: 3, flexShrink: 0 }} />
+              <span><strong style={{ color: "#F5F0E6" }}>Red</strong> — no match</span>
+            </li>
+            <li style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "#C9BFA8", lineHeight: 1.4 }}>
+              <span style={{ color: "#8FAE9C", fontWeight: 700, minWidth: 20, flexShrink: 0 }}>↑ ↓</span>
+              <span>Arrows on Debut and Born point toward the answer's year</span>
+            </li>
+          </ul>
           {streak.current > 0 && (
-            <p style={{ margin: "6px 0 0", fontSize: 13, color: "#D4AF37", fontFamily: "'Oswald', sans-serif" }}>
+            <p style={{ margin: "10px 0 0", fontSize: 13, color: "#D4AF37", fontFamily: "'Oswald', sans-serif" }}>
               🔥 {streak.current} day streak {streak.longest > streak.current ? `· best ${streak.longest}` : ""}
             </p>
           )}
@@ -699,13 +864,6 @@ export default function Stumple() {
           <button className={`stumple-tab ${mode === "practice" ? "active" : ""}`} onClick={startPractice}>
             Practice
           </button>
-        </div>
-
-        {/* Legend */}
-        <div style={{ display: "flex", gap: 14, justifyContent: "center", marginBottom: 20, flexWrap: "wrap", fontSize: 11, color: "#C9BFA8" }}>
-          <span><i style={{ background: "#2F6B4F", display: "inline-block", width: 10, height: 10, borderRadius: 3, marginRight: 5 }} />Correct</span>
-          <span><i style={{ background: "#C9A227", display: "inline-block", width: 10, height: 10, borderRadius: 3, marginRight: 5 }} />Close</span>
-          <span><i style={{ background: "#7A2E38", display: "inline-block", width: 10, height: 10, borderRadius: 3, marginRight: 5 }} />Wrong</span>
         </div>
 
         {/* Input */}
